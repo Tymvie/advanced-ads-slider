@@ -40,7 +40,9 @@ if ( is_admin() && ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) ) {
     new Advanced_Ads_Slider_Admin();
 } else {
     include_once( plugin_dir_path( __FILE__ ) . 'public/public.php' );
+    include_once( plugin_dir_path( __FILE__ ) . 'public/compatibility.php' );
     new Advanced_Ads_Slider();
+    new Advanced_Ads_Slider_Compatibility;
 }
 
 }

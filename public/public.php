@@ -141,22 +141,28 @@ class Advanced_Ads_Slider {
 	 */
 	public function get_slider_markup( Advanced_Ads_Group $group ) {
 		$slider_options = self::get_slider_options( $group );
+		$slider_options_encoded = wp_json_encode( $slider_options );
 
 		/* custom css file was added with version 1.1. Deactivate the following lines if there are issues with your layout
 		 * $css = "<style>.advads-slider { position: relative; width: 100% !important; overflow: hidden; } "
 			. ".advads-slider ul, .advads-slider li { list-style: none; margin: 0 !important; padding: 0 !important; } "
 			. ".advads-slider ul li { }</style>";*/
-		$slider_var = '$' . preg_replace( '/[^\da-z]/i', '', $slider_options['init_class'] );
-		
-		$script = '<script>( window.advanced_ads_ready || jQuery( document ).ready ).call( null, function() {'
-		. 'var ' . $slider_var . ' = jQuery( ".' . $slider_options['init_class'] . '" );'
-		// display all ads after slider is loaded to avoid all ads being displayed as a list'
-		. $slider_var . '.on( "unslider.ready", function() { jQuery( "div.custom-slider ul li" ).css( "display", "block" ); });'
-		. $slider_var . '.unslider({ ' . $slider_options['settings'] . ' });'
-		. $slider_var . '.on("mouseover", function(){'.$slider_var.'.unslider("stop");}).on("mouseout", function() {'.$slider_var.'.unslider("start");});});</script>';	
+
+
+		if ( Advanced_Ads_Slider_Compatibility::doing_infinite_scroll() ) {
+			$data_slider_options = 'data-options="' . esc_attr( $slider_options_encoded ) . '"';
+			$script = '';
+		} else {
+			$data_slider_options = '';
+			$script = '<script>( window.advanced_ads_ready || jQuery( document ).ready ).call( null, function() {'
+				. self::get_init_script()
+				. 'init_slider( ' . $slider_options_encoded . ' )'
+				. '} );</script>';
+
+		}
 
 		$result = array(
-			'before' => '<div id="'. $slider_options['slider_id'].'" class="'.'custom-slider '. $slider_options['init_class'] .' ' . $slider_options['prefix'] .'slider"><ul>',
+			'before' => '<div id="'. $slider_options['slider_id'].'" class="'.'custom-slider '. $slider_options['init_class'] .' ' . $slider_options['prefix'] .'slider" ' . $data_slider_options . '><ul>',
 			'after' => '</ul></div>' . $script,
 			'each' => '<li>%s</li>',
 			'min_ads' => 2,
@@ -165,6 +171,28 @@ class Advanced_Ads_Slider {
 
 		return $result;
 	}
+
+
+	/**
+	 * Get script for slider initialization.
+	 *
+	 * @return string
+	 */
+	public static function get_init_script() {
+		$script =  <<<'EOD'
+		function init_slider( slider_options ) {
+			var $slider_var = jQuery( '.' + slider_options['init_class'] );
+			var init_settings_obj = Function('return ({' + slider_options.init_settings + '})')();
+
+			// display all ads after slider is loaded to avoid all ads being displayed as a list'
+			$slider_var.on( "unslider.ready", function() { jQuery( "div.custom-slider ul li" ).css( "display", "block" ); });
+			$slider_var.unslider( init_settings_obj );
+			$slider_var.on("mouseover", function(){ $slider_var.unslider("stop");}).on("mouseout", function() { $slider_var.unslider("start");});
+		};
+EOD;
+		return $script;
+	}
+
 
 	/**
 	 * Add slider markup to passive cache-busting.
@@ -212,7 +240,7 @@ class Advanced_Ads_Slider {
             'prefix' => $prefix,
             'slider_id' => $slider_id,
             'init_class' => $slider_init_class,
-            'settings' => $settings // slider init options
+            'init_settings' => $settings // slider init options
         );
     }
     

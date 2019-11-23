@@ -35,6 +35,10 @@ You can use Advanced Ads along any other ad management plugin and don’t need t
 
 == Changelog ==
 
+= untagged =
+
+* GoodLife theme: made sliders work inside content loaded using infinite scroll
+
 = 1.4.6 =
 
 * downgraded unslider script to make stop on mouseover work again
